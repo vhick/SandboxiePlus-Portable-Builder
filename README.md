@@ -1,5 +1,19 @@
 # Sandboxie Plus — Community True-Portable ZIP Builder
 
+## PortableApps.com Menu support (fixed)
+
+Builds now include `App/AppInfo/appinfo.ini` (Name=`Sandboxie Plus Portable`,
+Category=`Security`, Start=`SandboxiePlusPortable.exe`) and five menu-sized PNG
+icons derived from the official `SandManInstall.ico`. PortableApps.com uses these
+to identify the package correctly. **This is still a ZIP-only builder, not an
+official PortableApps.com release or a .paf.exe installer.**
+
+For an already-extracted version with a blank menu entry, use the separate
+`SandboxiePlus-Menu-Quick-Fix.zip` and follow its instructions. The fix changes
+only `App/AppInfo`, not `Data`, drivers, or services. After copying a new build,
+choose **PortableApps Menu > Options > Refresh App Icons**.
+
+
 **Status:** Tested offline for structure/safety only. The official portable installation, custom launcher and driver cleanup **are not yet Windows-tested**. If a Windows Actions run fails, inspect its logs and do not disable integrity or service checks to force success.
 
 **Upstream:** [sandboxie-plus/Sandboxie](https://github.com/sandboxie-plus/Sandboxie). Initial reviewed version: [`v1.18.8`](https://github.com/sandboxie-plus/Sandboxie/releases/tag/v1.18.8) (October 17, 2026). **Architecture:** Windows x64 and ARM64 if available as a release asset. **Format:** manually triggered GitHub Actions ZIP only. No `.paf.exe` package or permanent install workflow.

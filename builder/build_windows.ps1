@@ -82,6 +82,64 @@ if ($bytes.Length -lt 500 -or $bytes[0] -ne 0 -or $bytes[1] -ne 0 -or $bytes[2] 
     throw 'Official .ico file invalid; not falling back to generic icon'
 }
 $compiler = Join-Path $env:WINDIR 'Microsoft.NET\Framework\v4.0.30319\csc.exe'
+# PortableApps.com Menu requires metadata and PNG icons in addition to appicon.ico.
+# This is menu metadata only; it does not install a driver or change sandbox settings.
+$appInfo = Join-Path $stage 'App\AppInfo\appinfo.ini'
+@"
+[Format]
+Type=PortableApps.comFormat
+Version=3.9
+
+[Details]
+Name=Sandboxie Plus Portable
+AppID=SandboxiePlusPortable-Community
+Publisher=Sandboxie Plus Contributors (Community Package)
+Homepage=https://github.com/sandboxie-plus/sandboxie
+Category=Security
+Description=Community portable package of Sandboxie Plus
+Language=Multilingual
+
+[License]
+Shareable=true
+OpenSource=true
+Freeware=true
+CommercialUse=true
+
+[Version]
+PackageVersion=$version.0
+DisplayVersion=$version
+
+[Dependencies]
+RequiresAdmin=yes
+
+[Control]
+Icons=1
+Start=SandboxiePlusPortable.exe
+"@ | Set-Content -Path $appInfo -Encoding ASCII
+
+# PNG icons are used by PortableApps.com Menu. Derive them from the official
+# multi-resolution Sandboxie icon already pinned to the selected upstream tag.
+Add-Type -AssemblyName System.Drawing
+foreach ($size in @(16,32,75,128,256)) {
+    $ico = [System.Drawing.Icon]::new($icon, [int]$size, [int]$size)
+    try {
+        $sourceBitmap = $ico.ToBitmap()
+        try {
+            $bitmap = [System.Drawing.Bitmap]::new([int]$size,[int]$size)
+            try {
+                $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+                try {
+                    $graphics.Clear([System.Drawing.Color]::Transparent)
+                    $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+                    $graphics.DrawImage($sourceBitmap,0,0,[int]$size,[int]$size)
+                } finally { $graphics.Dispose() }
+                $bitmap.Save((Join-Path $stage "App\AppInfo\appicon_$size.png"),[System.Drawing.Imaging.ImageFormat]::Png)
+            } finally { $bitmap.Dispose() }
+        } finally { $sourceBitmap.Dispose() }
+    } finally { $ico.Dispose() }
+}
+Write-Host 'PortableApps.com appinfo.ini and 16/32/75/128/256px official PNG icons created.'
+
 if (-not (Test-Path $compiler)) { throw 'Windows .NET Framework compiler missing' }
 $launcher = Join-Path $stage 'SandboxiePlusPortable.exe'
 $source = Join-Path $repo 'builder\SandboxiePlusPortable.cs'
