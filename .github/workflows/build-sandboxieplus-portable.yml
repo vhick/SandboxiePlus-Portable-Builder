@@ -1,0 +1,55 @@
+name: Build Sandboxie Plus Portable ZIP (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Official stable version (e.g. v1.18.8)
+        required: true
+        default: v1.18.8
+        type: string
+      architecture:
+        description: Windows architecture
+        required: true
+        default: x64
+        type: choice
+        options:
+          - x64
+          - ARM64
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sandboxieplus-portable-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  package:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout builder only
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Check offline builder tests
+        shell: pwsh
+        run: python -m unittest discover -s tests -v
+      - name: Download, verify, and extract official portable application
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          ARCHITECTURE: ${{ inputs.architecture }}
+        run: |
+          & ./builder/build_windows.ps1 -ReleaseTag $env:RELEASE_TAG -Architecture $env:ARCHITECTURE
+          if ($LASTEXITCODE -ne 0) { throw 'Builder failed' }
+      - name: Upload verified ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SandboxiePlusPortable-${{ inputs.release_tag }}-${{ inputs.architecture }}
+          path: artifacts/*.zip
+          if-no-files-found: error
+          retention-days: 7
